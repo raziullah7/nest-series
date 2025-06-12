@@ -1,5 +1,4 @@
-import { Injectable } from '@nestjs/common';
-import { filter } from 'rxjs';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 @Injectable()
 export class UsersService {
@@ -67,5 +66,50 @@ export class UsersService {
         return filteredUsers
     }
 
-    
+    // find 1 user
+    findOne(id: number) {
+        return this.users.find(user => user.id === id)
+    }
+
+    // create a user
+    create(user: {name: string, email: string, role: 'INTERN'|'ENGINEER'|'ADMIN'}) {
+        // as there is no autoincrement here, 
+        // we find the highest id and +1 it for new id
+        // sorting in descending order
+        const usersByHighestId = [...this.users].sort((a, b) => b.id - a.id)
+
+        // making the new user now
+        const newUser = {
+            id: usersByHighestId[0].id + 1,
+            ...user
+        }
+
+        // adding the new user to the list
+        this.users.push(newUser)
+        return newUser
+    }
+
+    // update a user
+    update(id: number, updatedUser: {name?: string, email?: string, role?: 'INTERN'|'ENGINEER'|'ADMIN'}) {
+        this.users = this.users.map(user => 
+            (user.id === id) ? {...user, ...updatedUser} : user
+        )
+        // return the updated user
+        return this.findOne(id)
+    }
+
+    // delete a user
+    delete(id: number) {
+        // find the user to be removed
+        const removedUser = this.findOne(id);
+
+        // throw an exception if not found
+        if (!removedUser) {
+            throw new NotFoundException(`User is ID ${id} not found`)
+        }
+
+        // remove and return the user otherwise
+        this.users = this.users.filter(user => user.id !== id)
+        return removedUser
+    }
 }
