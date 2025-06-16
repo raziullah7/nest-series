@@ -1,4 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -56,10 +58,17 @@ export class UsersService {
         // apply filters only when a query param is provided
         if (role) {
             filteredUsers = filteredUsers.filter(user => user.role === role)
+            if (filteredUsers.length === 0){
+                throw new NotFoundException("User role not found")
+            } 
         }
+
         if (name) {
             filteredUsers = filteredUsers.filter(user => 
                 user.name.toLowerCase().includes(name.toLowerCase()))
+            if (filteredUsers.length === 0){
+                throw new NotFoundException("User name not found")
+            } 
         }
 
         // then return the filteredUsers
@@ -68,11 +77,15 @@ export class UsersService {
 
     // find 1 user
     findOne(id: number) {
-        return this.users.find(user => user.id === id)
+        const user = this.users.find(user => user.id === id)
+
+        if (!user) throw new NotFoundException("User not found")
+
+        return user
     }
 
     // create a user
-    create(user: {name: string, email: string, role: 'INTERN'|'ENGINEER'|'ADMIN'}) {
+    create(createUserDto: CreateUserDto) {
         // as there is no autoincrement here, 
         // we find the highest id and +1 it for new id
         // sorting in descending order
@@ -81,7 +94,7 @@ export class UsersService {
         // making the new user now
         const newUser = {
             id: usersByHighestId[0].id + 1,
-            ...user
+            ...createUserDto
         }
 
         // adding the new user to the list
@@ -90,9 +103,9 @@ export class UsersService {
     }
 
     // update a user
-    update(id: number, updatedUser: {name?: string, email?: string, role?: 'INTERN'|'ENGINEER'|'ADMIN'}) {
+    update(id: number, updateUserDto: UpdateUserDto) {
         this.users = this.users.map(user => 
-            (user.id === id) ? {...user, ...updatedUser} : user
+            (user.id === id) ? {...user, ...updateUserDto} : user
         )
         // return the updated user
         return this.findOne(id)
